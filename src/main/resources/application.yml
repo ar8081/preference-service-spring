@@ -1,0 +1,36 @@
+spring:
+  application:
+    name: member-preferences-service
+  jackson:
+    default-property-inclusion: non_empty
+    property-naming-strategy: LOWER_CAMEL_CASE
+
+server:
+  port: 8080
+  servlet:
+    context-path: /
+
+preferences:
+  patch:
+    enabled: true
+  rate-limit:
+    enabled: true
+    requests-per-minute: 60
+    per-member-limit: 10
+  request-timeout-ms: 5000
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,configprops
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+logging:
+  level:
+    com.preferences: DEBUG
+    org.springframework.web: INFO
+  pattern:
+    console: "%d{ISO8601} [%thread] %-5level %logger{36} - %msg%n"

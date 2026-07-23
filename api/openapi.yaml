@@ -1,0 +1,202 @@
+openapi: 3.0.0
+info:
+  title: Member Preferences Service API
+  version: 1.0.0
+  description: REST API for managing member preferences
+servers:
+  - url: http://localhost:8080
+
+paths:
+  /v1/preferences/{memberId}:
+    get:
+      summary: Get member preferences
+      operationId: getPreferences
+      parameters:
+        - name: memberId
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "123"
+      responses:
+        '200':
+          description: Preferences found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PreferencesResponse'
+        '404':
+          description: Member not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      summary: Create or update member preferences
+      operationId: upsertPreferences
+      parameters:
+        - name: memberId
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "123"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PreferencesRequest'
+      responses:
+        '200':
+          description: Preferences created or updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PreferencesResponse'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    patch:
+      summary: Partially update member preferences
+      operationId: patchPreferences
+      parameters:
+        - name: memberId
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "123"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PreferencesPatchRequest'
+      responses:
+        '200':
+          description: Preferences partially updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PreferencesResponse'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Member not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    PreferencesRequest:
+      type: object
+      required:
+        - emailNotifications
+        - smsNotifications
+        - language
+      properties:
+        emailNotifications:
+          type: boolean
+          example: true
+        smsNotifications:
+          type: boolean
+          example: false
+        language:
+          type: string
+          enum: [en, es, fr]
+          example: en
+        timezone:
+          type: string
+          example: UTC
+        marketingConsent:
+          type: boolean
+          example: false
+
+    PreferencesPatchRequest:
+      type: object
+      properties:
+        emailNotifications:
+          type: boolean
+        smsNotifications:
+          type: boolean
+        language:
+          type: string
+          enum: [en, es, fr]
+        timezone:
+          type: string
+        marketingConsent:
+          type: boolean
+
+    PreferencesResponse:
+      type: object
+      properties:
+        memberId:
+          type: string
+          example: "123"
+        emailNotifications:
+          type: boolean
+          example: true
+        smsNotifications:
+          type: boolean
+          example: false
+        language:
+          type: string
+          example: en
+        timezone:
+          type: string
+          example: UTC
+        marketingConsent:
+          type: boolean
+          example: false
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: NOT_FOUND
+        message:
+          type: string
+          example: Member preferences not found
+        timestamp:
+          type: string
+          format: date-time
+        path:
+          type: string
+          example: /v1/preferences/123
