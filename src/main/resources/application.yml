@@ -18,7 +18,9 @@ preferences:
     requests-per-minute: 60
     per-member-limit: 10
   request-timeout-ms: 5000
-
+  cache:
+    ttl-seconds: 300
+    max-size: 1000
 management:
   endpoints:
     web:
@@ -34,3 +36,6 @@ logging:
     org.springframework.web: INFO
   pattern:
     console: "%d{ISO8601} [%thread] %-5level %logger{36} - %msg%n"
+security:
+  api-key: secret-api-key-12345
+  max-body-size-bytes: 2048

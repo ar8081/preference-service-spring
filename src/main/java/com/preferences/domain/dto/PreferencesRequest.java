@@ -1,33 +1,39 @@
 package com.preferences.domain.dto;
 
-import jakarta.validation.constraints.NotNull;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 
 public class PreferencesRequest {
-    
+
     @NotNull(message = "emailNotifications is required")
     @JsonProperty("emailNotifications")
     private Boolean emailNotifications;
-    
+
     @NotNull(message = "smsNotifications is required")
     @JsonProperty("smsNotifications")
     private Boolean smsNotifications;
-    
+
     @NotNull(message = "language is required")
+    @Size(max = 10, message = "language must not exceed 10 characters")
+    @Pattern(regexp = "^[a-zA-Z-]+$", message = "language must contain only letters and hyphens")
     @JsonProperty("language")
     private String language;
-    
+
+    @Size(max = 50, message = "timezone must not exceed 50 characters")
+    @Pattern(regexp = "^[a-zA-Z0-9/_+-]*$", message = "timezone contains invalid characters")
     @JsonProperty("timezone")
     private String timezone;
-    
+
     @JsonProperty("marketingConsent")
     private Boolean marketingConsent;
 
     public PreferencesRequest() {
     }
 
-    public PreferencesRequest(Boolean emailNotifications, Boolean smsNotifications, String language, 
-                             String timezone, Boolean marketingConsent) {
+    public PreferencesRequest(Boolean emailNotifications, Boolean smsNotifications,
+                              String language, String timezone, Boolean marketingConsent) {
         this.emailNotifications = emailNotifications;
         this.smsNotifications = smsNotifications;
         this.language = language;
@@ -35,43 +41,18 @@ public class PreferencesRequest {
         this.marketingConsent = marketingConsent;
     }
 
-    public Boolean getEmailNotifications() {
-        return emailNotifications;
-    }
+    public Boolean getEmailNotifications() { return emailNotifications; }
+    public void setEmailNotifications(Boolean emailNotifications) { this.emailNotifications = emailNotifications; }
 
-    public void setEmailNotifications(Boolean emailNotifications) {
-        this.emailNotifications = emailNotifications;
-    }
+    public Boolean getSmsNotifications() { return smsNotifications; }
+    public void setSmsNotifications(Boolean smsNotifications) { this.smsNotifications = smsNotifications; }
 
-    public Boolean getSmsNotifications() {
-        return smsNotifications;
-    }
+    public String getLanguage() { return language; }
+    public void setLanguage(String language) { this.language = language; }
 
-    public void setSmsNotifications(Boolean smsNotifications) {
-        this.smsNotifications = smsNotifications;
-    }
+    public String getTimezone() { return timezone; }
+    public void setTimezone(String timezone) { this.timezone = timezone; }
 
-    public String getLanguage() {
-        return language;
-    }
-
-    public void setLanguage(String language) {
-        this.language = language;
-    }
-
-    public String getTimezone() {
-        return timezone;
-    }
-
-    public void setTimezone(String timezone) {
-        this.timezone = timezone;
-    }
-
-    public Boolean getMarketingConsent() {
-        return marketingConsent;
-    }
-
-    public void setMarketingConsent(Boolean marketingConsent) {
-        this.marketingConsent = marketingConsent;
-    }
+    public Boolean getMarketingConsent() { return marketingConsent; }
+    public void setMarketingConsent(Boolean marketingConsent) { this.marketingConsent = marketingConsent; }
 }
