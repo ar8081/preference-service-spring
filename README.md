@@ -1,8 +1,10 @@
 # Member Preferences Service
 
-A lightweight REST API for managing member preferences built with Spring Boot, Gradle, and in-memory persistence.
+A production-ready REST API service for managing member preferences built with Java 17, Spring Boot 3.2, Gradle, and in-memory persistence.
 
-## Quick Start
+---
+
+## 🚀 Quick Start
 
 ### Build
 ```bash
@@ -13,48 +15,47 @@ A lightweight REST API for managing member preferences built with Spring Boot, G
 ```bash
 ./gradlew bootRun
 ```
-
-The service runs on `http://localhost:8080`
+The service starts on `http://localhost:8080`
 
 ### Test
 ```bash
 ./gradlew test
 ```
 
-## API Endpoints
+---
 
-### Get Member Preferences
+## 🔑 Authentication
+
+All API endpoints (except Actuator `/actuator/**` and Swagger UI `/swagger-ui.html`) require an **API Key**:
+
+```
+X-API-Key: secret-api-key-12345
+```
+
+---
+
+## 📡 API Endpoints
+
+### 1. Get Member Preferences (GET)
 ```bash
-curl -X GET http://localhost:8080/v1/preferences/{memberId}
+curl -i http://localhost:8080/v1/preferences/123 \
+  -H "X-API-Key: secret-api-key-12345"
 ```
 
-**Response (200):**
-```json
-{
-  "memberId": "123",
-  "emailNotifications": true,
-  "smsNotifications": false,
-  "language": "en",
-  "timezone": "UTC",
-  "marketingConsent": false,
-  "createdAt": "2024-01-01T10:00:00",
-  "updatedAt": "2024-01-01T10:00:00"
-}
-```
-
-**Error (404):**
-```json
-{
-  "error": "NOT_FOUND",
-  "message": "Member preferences not found",
-  "timestamp": "2024-01-01T10:00:00",
-  "path": "/v1/preferences/123"
-}
-```
-
-### Create or Update (Upsert) Preferences
+**Conditional GET (ETag Validation - 304 Not Modified):**
 ```bash
-curl -X PUT http://localhost:8080/v1/preferences/{memberId} \
+curl -i http://localhost:8080/v1/preferences/123 \
+  -H "X-API-Key: secret-api-key-12345" \
+  -H 'If-None-Match: "a3f2d7c1b4e9"'
+```
+Returns `304 Not Modified` with no response body if data is unchanged.
+
+---
+
+### 2. Create or Update Preferences (PUT)
+```bash
+curl -i -X PUT http://localhost:8080/v1/preferences/123 \
+  -H "X-API-Key: secret-api-key-12345" \
   -H "Content-Type: application/json" \
   -d '{
     "emailNotifications": true,
@@ -65,133 +66,123 @@ curl -X PUT http://localhost:8080/v1/preferences/{memberId} \
   }'
 ```
 
-**Response (200):** Same as GET
-
-### Partially Update (Patch) Preferences
+**Write Protection / Optimistic Locking (If-Match):**
 ```bash
-curl -X PATCH http://localhost:8080/v1/preferences/{memberId} \
+curl -i -X PUT http://localhost:8080/v1/preferences/123 \
+  -H "X-API-Key: secret-api-key-12345" \
+  -H "Content-Type: application/json" \
+  -H 'If-Match: "a3f2d7c1b4e9"' \
+  -d '{ ... }'
+```
+Returns `412 Precondition Failed` if the current server ETag does not match `If-Match`.
+
+---
+
+### 3. Partially Update Preferences (PATCH)
+```bash
+curl -i -X PATCH http://localhost:8080/v1/preferences/123 \
+  -H "X-API-Key: secret-api-key-12345" \
   -H "Content-Type: application/json" \
   -d '{
-    "language": "es",
+    "language": "fr",
     "emailNotifications": false
   }'
 ```
 
-**Response (200):** Updated preferences (only specified fields updated)
+---
 
-## Features
+### 4. Internationalization (i18n Error Messages)
+Pass `Accept-Language` header to get localized error messages:
 
-- **In-Memory Persistence**: Data stored in thread-safe ConcurrentHashMap
-- **Structured Logging**: MDC with correlation IDs for request tracing
-- **Metrics**: Micrometer metrics accessible via `/actuator/metrics`
-- **Rate Limiting**: 10 requests per minute per member
-- **Error Handling**: Consistent error payloads with clear error codes
-- **Configuration**: Feature flags for patch operations and rate limiting
-- **OpenAPI Documentation**: Interactive API docs at `/swagger-ui.html`
+```bash
+# French Error Response
+curl -i http://localhost:8080/v1/preferences/nonexistent \
+  -H "X-API-Key: secret-api-key-12345" \
+  -H "Accept-Language: fr"
+```
 
-## Configuration
+**Response (404 Not Found in French):**
+```json
+{
+  "error": "NOT_FOUND",
+  "message": "Préférences du membre introuvables",
+  "timestamp": "2026-07-27T14:20:00",
+  "path": "/v1/preferences/nonexistent"
+}
+```
+
+---
+
+## ✨ Features Implemented (Tasks 1–15 Complete)
+
+- **In-Memory Persistence**: Thread-safe data storage using `ConcurrentHashMap`.
+- **Security Hardening**: `ApiKeyFilter` enforcing `X-API-Key` authentication & max body payload limits.
+- **Conditional Requests (ETags)**: Strong MD5 ETags supporting `If-None-Match` (304) and `If-Match` (412).
+- **Caffeine Response Caching**: In-memory caching for `GET` with TTL (5 min) & invalidation on `PUT`/`PATCH`.
+- **i18n Error Localization**: Translated error bundles (`messages.properties`, `messages_fr.properties`) honoring `Accept-Language`.
+- **Rate Limiting**: Sliding window token bucket (10 requests per minute per member).
+- **Structured Logging & Observability**: SLF4J MDC correlation IDs + Micrometer metrics at `/actuator/metrics`.
+- **Input Validation**: Jakarta Bean Validation (`@NotNull`, `@Size`, `@Pattern`) for data hygiene and injection defense.
+- **Contract & Property-Based Testing**: OpenAPI 3.0 schema conformance, boundary value testing, and status code verification.
+
+---
+
+## ⚙️ Configuration Reference
 
 Edit `src/main/resources/application.yml`:
 
 ```yaml
 preferences:
   patch:
-    enabled: true          # Enable PATCH operations
+    enabled: true
   rate-limit:
-    enabled: true          # Enable rate limiting
+    enabled: true
     requests-per-minute: 60
-    per-member-limit: 10   # Requests per member per minute
-  request-timeout-ms: 5000 # Request timeout in milliseconds
+    per-member-limit: 10
+  request-timeout-ms: 5000
+  cache:
+    ttl-seconds: 300       # Caffeine cache TTL
+    max-size: 1000         # Maximum cached members
+
+security:
+  api-key: secret-api-key-12345
+  max-body-size-bytes: 2048
 ```
 
-## Actuator Endpoints
+---
 
-- Health: `GET /actuator/health`
-- Metrics: `GET /actuator/metrics`
-- Configuration: `GET /actuator/configprops`
+## 📊 Actuator Endpoints
 
-## Development
+- **Health**: `GET /actuator/health`
+- **Metrics**: `GET /actuator/metrics`
+- **Cache Hits**: `GET /actuator/metrics/cache.gets?tag=name:preferences&tag=result:hit`
+- **Cache Misses**: `GET /actuator/metrics/cache.gets?tag=name:preferences&tag=result:miss`
+- **OpenAPI / Swagger**: `GET /swagger-ui.html`
 
-### Project Structure
-```
-src/
-├── main/java/com/preferences/
-│   ├── domain/
-│   │   ├── dto/          # Data transfer objects
-│   │   ├── model/        # Domain models
-│   │   └── repository/   # Data access layer
-│   ├── application/
-│   │   └── service/      # Business logic
-│   ├── presentation/
-│   │   ├── controller/   # REST endpoints
-│   │   └── exception/    # Exception handling
-│   └── infrastructure/
-│       ├── config/       # Configuration beans
-│       └── filter/       # Filters and interceptors
-├── resources/
-│   └── application.yml   # Application properties
-└── test/java/com/preferences/
-    └── *IntegrationTest  # Integration tests
-```
+---
 
-### Testing
+## 🧪 Testing
 
-Run the complete test suite:
+Run all 70+ integration and OpenAPI contract tests:
 ```bash
 ./gradlew test
 ```
 
-Key test scenarios:
-- Happy path: Create, read, update preferences
-- Validation: Invalid inputs rejected with 400
-- Not Found: Missing members return 404
-- Rate Limiting: Exceeded limits return 429
+Key test suites:
+- `PreferencesControllerIntegrationTest`: End-to-end endpoint tests, security, caching, ETag, rate limiting, and i18n.
+- `OpenApiContractTest`: Property-based and contract tests against `openapi.yaml`.
 
-## Dependencies
+---
 
-- **Spring Boot 3.2**: Web, Validation, Actuator
-- **springdoc-openapi**: OpenAPI UI at `/swagger-ui.html`
-- **Micrometer**: Metrics collection (built-in with Actuator)
-- **Jakarta Validation**: Input validation
-
-## Error Codes
+## ⚠️ Error Codes Table
 
 | Code | Status | Description |
-|------|--------|-------------|
-| NOT_FOUND | 404 | Member preferences not found |
-| INVALID_INPUT | 400 | Validation failed |
-| RATE_LIMIT_EXCEEDED | 429 | Too many requests |
-| INTERNAL_SERVER_ERROR | 500 | Unexpected server error |
-
-## Example Workflow
-
-1. **Create preferences:**
-   ```bash
-   curl -X PUT http://localhost:8080/v1/preferences/user123 \
-     -H "Content-Type: application/json" \
-     -d '{"emailNotifications":true,"smsNotifications":false,"language":"en"}'
-   ```
-
-2. **Read preferences:**
-   ```bash
-   curl http://localhost:8080/v1/preferences/user123
-   ```
-
-3. **Update language:**
-   ```bash
-   curl -X PATCH http://localhost:8080/v1/preferences/user123 \
-     -H "Content-Type: application/json" \
-     -d '{"language":"fr"}'
-   ```
-
-4. **Check metrics:**
-   ```bash
-   curl http://localhost:8080/actuator/metrics
-   ```
-
-## Notes
-
-- All data is stored in-memory and will be lost on service restart
-- Timestamps are in ISO 8601 format (LocalDateTime)
-- Rate limiting uses a sliding window per member ID
-- Feature flags allow toggling behavior without code changes
+|---|---|---|
+| `UNAUTHORIZED` | 401 | Missing `X-API-Key` header |
+| `FORBIDDEN` | 403 | Invalid `X-API-Key` header |
+| `INVALID_INPUT` | 400 | Validation failed or malformed JSON |
+| `PAYLOAD_TOO_LARGE` | 400 | Body exceeds 2048 bytes |
+| `NOT_FOUND` | 404 | Member preferences not found |
+| `PRECONDITION_FAILED` | 412 | `If-Match` ETag header mismatch |
+| `RATE_LIMIT_EXCEEDED` | 429 | Exceeded 10 req/min limit |
+| `INTERNAL_SERVER_ERROR` | 500 | Unexpected server error |
